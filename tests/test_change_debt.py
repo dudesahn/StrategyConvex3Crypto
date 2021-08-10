@@ -16,7 +16,7 @@ def test_change_debt(gov, token, vault, dudesahn, strategist, whale, strategy, c
 
     # debtRatio is in BPS (aka, max is 10,000, which represents 100%), and is a fraction of the funds that can be in the strategy
     currentDebt = vault.strategies(strategy)[2]
-    vault.updateStrategyDebtRatio(strategy, currentDebt/2, {"from": gov})
+    vault.updateStrategyDebtRatio(strategy, currentDebt / 2, {"from": gov})
     chain.sleep(1)
     strategy.harvest({"from": gov})
     chain.sleep(1)
@@ -33,7 +33,7 @@ def test_change_debt(gov, token, vault, dudesahn, strategist, whale, strategy, c
     curveVoterProxyStrategy.harvest({"from": gov})
     chain.sleep(86400)
     chain.mine(1)
-    
+
     # withdraw and confirm we made money
-    vault.withdraw({"from": whale})    
-    assert token.balanceOf(whale) > startingWhale 
+    vault.withdraw({"from": whale})
+    assert token.balanceOf(whale) > startingWhale
