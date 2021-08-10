@@ -36,7 +36,7 @@ def test_emergency_exit(gov, token, vault, dudesahn, strategist, whale, strategy
     vault.withdraw({"from": whale})    
     assert token.balanceOf(whale) > startingWhale 
     
-def test_emergency_withdraw_method_0(gov, token, vault, dudesahn, strategist, whale, strategy, chain, strategist_ms, rewardsContract, cvxIBDeposit, strat_setup):
+def test_emergency_withdraw_method_0(gov, token, vault, dudesahn, strategist, whale, strategy, chain, strategist_ms, rewardsContract, cvxIBDeposit):
     ## deposit to the vault after approving
     startingWhale = token.balanceOf(whale)
     token.approve(vault, 2 ** 256 - 1, {"from": whale})
@@ -55,7 +55,7 @@ def test_emergency_withdraw_method_0(gov, token, vault, dudesahn, strategist, wh
     strategy.setClaimRewards(True, {"from": gov})
     strategy.setEmergencyExit({"from": gov})
     
-    strategy.withdrawToConvexDepositTokens({"from": dudesahn})
+    strategy.withdrawToConvexDepositTokens({"from": gov})
     chain.sleep(1)
     strategy.harvest({"from": gov})
     chain.sleep(1)    
@@ -68,7 +68,7 @@ def test_emergency_withdraw_method_0(gov, token, vault, dudesahn, strategist, wh
     assert cvxIBDeposit.balanceOf(gov) > 0
 
 
-def test_emergency_withdraw_method_1(gov, token, vault, dudesahn, strategist, whale, strategy, chain, strategist_ms, rewardsContract, cvxIBDeposit, strat_setup):
+def test_emergency_withdraw_method_1(gov, token, vault, dudesahn, strategist, whale, strategy, chain, strategist_ms, rewardsContract, cvxIBDeposit):
     ## deposit to the vault after approving
     startingWhale = token.balanceOf(whale)
     token.approve(vault, 2 ** 256 - 1, {"from": whale})
@@ -87,7 +87,7 @@ def test_emergency_withdraw_method_1(gov, token, vault, dudesahn, strategist, wh
     strategy.setClaimRewards(False, {"from": gov})
     strategy.setEmergencyExit({"from": gov})
     
-    strategy.withdrawToConvexDepositTokens({"from": dudesahn})
+    strategy.withdrawToConvexDepositTokens({"from": gov})
     chain.sleep(1)
     strategy.harvest({"from": gov})
     assert strategy.estimatedTotalAssets() == 0

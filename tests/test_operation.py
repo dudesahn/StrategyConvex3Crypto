@@ -29,7 +29,7 @@ def test_operation(gov, token, vault, dudesahn, strategist, whale, strategy, cha
     chain.mine(1)
 
     # harvest after a day, store new asset amount
-    tx = strategy.harvest({"from": dudesahn})
+    tx = strategy.harvest({"from": gov})
     # tx.call_trace(True)
     new_assets_dai = vault.totalAssets()
     assert new_assets_dai > old_assets_dai
