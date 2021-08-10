@@ -86,7 +86,7 @@ contract StrategyConvex3Crypto is BaseStrategy {
     IERC20 public constant weth =
         IERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
     IERC20 public constant wbtc =
-        IERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
+        IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
     IERC20 public constant usdt =
         IERC20(0xdAC17F958D2ee523a2206206994597C13D831ec7);
 
@@ -128,12 +128,12 @@ contract StrategyConvex3Crypto is BaseStrategy {
         usdt.safeApprove(address(curve), type(uint256).max);
 
         // crv token path
-        crvPath = new address[](3);
+        crvPath = new address[](2);
         crvPath[0] = address(crv);
         crvPath[1] = address(weth);
 
         // convex token path
-        convexTokenPath = new address[](3);
+        convexTokenPath = new address[](2);
         convexTokenPath[0] = address(convexToken);
         convexTokenPath[1] = address(weth);
     }
@@ -184,7 +184,7 @@ contract StrategyConvex3Crypto is BaseStrategy {
             uint256 crvRemainder = crvBalance.sub(_keepCRV);
 
             _sellCrv(crvRemainder);
-            if (convexBalance > 0) _sellConvex(convexBalance);
+            _sellConvex(convexBalance);
 
             if (optimal == 0) {
                 uint256 usdtBalance = usdt.balanceOf(address(this));
@@ -266,7 +266,7 @@ contract StrategyConvex3Crypto is BaseStrategy {
                 uint256 crvRemainder = crvBalance.sub(_keepCRV);
 
                 _sellCrv(crvRemainder);
-                if (convexBalance > 0) _sellConvex(convexBalance);
+                _sellConvex(convexBalance);
                 // increase our tend counter by 1 so we can know when we should harvest again
                 uint256 previousTendCounter = tendCounter;
                 tendCounter = previousTendCounter.add(1);
@@ -416,7 +416,7 @@ contract StrategyConvex3Crypto is BaseStrategy {
 
         // check if it makes sense to send funds from vault to strategy
         uint256 credit = vault.creditAvailable();
-        if (profitFactor.mul(callCost) < credit.add(profit)) return true;
+        return (profitFactor.mul(callCost) < credit.add(profit));
 
         // calculate how much profit we'll make if we harvest
         uint256 harvestProfit = claimableProfitInDolla();
@@ -475,7 +475,6 @@ contract StrategyConvex3Crypto is BaseStrategy {
         uint256 maxSupply = 100 * 1000000 * 1e18; // 100mil
         uint256 reductionPerCliff = 100000000000000000000000; // 100,000
         uint256 supply = convexToken.totalSupply();
-        uint256 mintableCvx;
 
         uint256 cliff = supply.div(reductionPerCliff);
         //mint if below total cliffs
@@ -483,35 +482,34 @@ contract StrategyConvex3Crypto is BaseStrategy {
             //for reduction% take inverse of current cliff
             uint256 reduction = totalCliffs.sub(cliff);
             //reduce
-            mintableCvx = claimableCrv.mul(reduction).div(totalCliffs);
+            uint256 mintableCvx = claimableCrv.mul(reduction).div(totalCliffs);
 
             //supply cap check
             uint256 amtTillMax = maxSupply.sub(supply);
             if (mintableCvx > amtTillMax) {
                 mintableCvx = amtTillMax;
             }
-        }
 
-        uint256 crvValue;
-        if (claimableCrv > 0) {
             uint256[] memory crvSwap =
                 IUniswapV2Router02(crvRouter).getAmountsOut(
                     claimableCrv,
                     crvPath
                 );
-            crvValue = crvSwap[2];
-        }
+            uint256 crvValue = crvSwap[2];
 
-        uint256 cvxValue;
-        if (mintableCvx > 0) {
-            uint256[] memory cvxSwap =
-                IUniswapV2Router02(cvxRouter).getAmountsOut(
-                    mintableCvx,
-                    convexTokenPath
-                );
-            cvxValue = cvxSwap[2];
+            uint256 cvxValue = 0;
+
+            if (mintableCvx > 0) {
+                uint256[] memory cvxSwap =
+                    IUniswapV2Router02(cvxRouter).getAmountsOut(
+                        mintableCvx,
+                        convexTokenPath
+                    );
+                cvxValue = cvxSwap[2];
+            }
+
+            return crvValue.add(cvxValue); // dollar value of our harvest
         }
-        return crvValue.add(cvxValue); // dollar value of our harvest
     }
 
     // set number of tends before we call our next harvest
@@ -535,7 +533,7 @@ contract StrategyConvex3Crypto is BaseStrategy {
     // These functions are useful for setting parameters of the strategy that may need to be adjusted.
 
     // Set the amount of CRV to be locked in Yearn's veCRV voter from each harvest. Default is 10%.
-    function setKeepCRV(uint256 _keepCRV) external onlyGovernance {
+    function setKeepCRV(uint256 _keepCRV) external onlyAuthorized {
         keepCRV = _keepCRV;
     }
 
