@@ -3,8 +3,9 @@ from brownie import Wei
 from pytest import approx
 
 
-def test_change_debt_with_profit(gov, token, vault, dudesahn, whale, strategy, curveVoterProxyStrategy):
+def test_change_debt_with_profit(gov, token, vault, dudesahn, whale, strategy, curveVoterProxyStrategy, chain):
     token.approve(vault, 2 ** 256 - 1, {"from": whale})
+    chain.sleep(1)
     vault.deposit(50e18, {"from": whale})
     strategy.harvest({"from": gov})
     prev_params = vault.strategies(strategy).dict()
