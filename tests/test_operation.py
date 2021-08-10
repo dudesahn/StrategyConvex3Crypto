@@ -7,19 +7,19 @@ def test_operation(gov, token, vault, dudesahn, strategist, whale, strategy, cha
     ## deposit to the vault after approving
     startingWhale = token.balanceOf(whale)
     token.approve(vault, 2 ** 256 - 1, {"from": whale})
-    vault.deposit(100000e18, {"from": whale})
+    vault.deposit(50e18, {"from": whale})
     newWhale = token.balanceOf(whale)
     starting_assets = vault.totalAssets()
         
     # tend our strategy 
-    strategy.tend({"from": dudesahn})
+    strategy.tend({"from": gov})
     
     # simulate a day of earnings
     chain.sleep(86400)
     chain.mine(1)
 
     # harvest, store asset amount
-    strategy.harvest({"from": dudesahn})
+    strategy.harvest({"from": gov})
     # tx.call_trace(True)
     old_assets_dai = vault.totalAssets()
     assert old_assets_dai >= starting_assets
@@ -45,7 +45,7 @@ def test_operation(gov, token, vault, dudesahn, strategist, whale, strategy, cha
     chain.mine(1)
 
     # harvest after a month, store new asset amount after switch to USDC
-    strategy.harvest({"from": dudesahn})
+    strategy.harvest({"from": gov})
     new_assets_usdc = vault.totalAssets()
     assert new_assets_usdc > new_assets_dai
 
@@ -60,7 +60,7 @@ def test_operation(gov, token, vault, dudesahn, strategist, whale, strategy, cha
     chain.mine(1)
 
     # harvest after a month, store new asset amount
-    strategy.harvest({"from": dudesahn})
+    strategy.harvest({"from": gov})
     new_assets_usdt = vault.totalAssets()
     assert new_assets_usdt > new_assets_usdc
 
@@ -73,7 +73,7 @@ def test_operation(gov, token, vault, dudesahn, strategist, whale, strategy, cha
     
     # test to make sure our strategy is selling convex properly. send it some from our whale.
     cvx.transfer(strategy, 1000e18, {"from": convexWhale})
-    strategy.harvest({"from": dudesahn})
+    strategy.harvest({"from": gov})
     new_assets_from_convex_sale = vault.totalAssets()
     assert new_assets_from_convex_sale > new_assets_usdt
 

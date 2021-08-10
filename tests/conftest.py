@@ -10,8 +10,8 @@ def shared_setup(fn_isolation):
 
 @pytest.fixture
 def token():
-    # this should be the address of the ERC-20 used by the strategy/vault. In this case, Curve's Iron Bank Pool token
-    token_address = "0x5282a4eF67D9C33135340fB3289cc1711c13638C"
+    # this should be the address of the ERC-20 used by the strategy/vault. In this case, Curve's 3crypto Pool token
+    token_address = "0xc4AD29ba4B3c580e6D59105FFf484999997675Ff"
     yield Contract(token_address)
 
 @pytest.fixture
@@ -24,7 +24,7 @@ def cvx():
 
 @pytest.fixture
 def cvxIBDeposit():
-    yield Contract("0x912EC00eaEbf3820a9B0AC7a5E15F381A1C91f22")
+    yield Contract("0x903C9974aAA431A765e60bC07aF45f0A1B3b61fb")
 
 @pytest.fixture
 def dai():
@@ -32,7 +32,7 @@ def dai():
 
 @pytest.fixture
 def rewardsContract():
-    yield Contract("0x3E03fFF82F77073cc590b656D42FceB12E4910A8")
+    yield Contract("0x9D5C5E364D81DaB193b72db9E9BE9D8ee669B652")
 
 @pytest.fixture
 def voter():
@@ -91,49 +91,42 @@ def strategist_ms(accounts):
 @pytest.fixture
 def whale(accounts):
     # Totally in it for the tech (largest EOA holder of ib-3crv, ~600k worth)
-    whale = accounts.at('0xE594173Aaa1493665EC6A19a0D170C76EEa1124a', force=True)
+    whale = accounts.at('0x7a16fF8270133F063aAb6C9977183D9e72835428', force=True)
     yield whale
 
 @pytest.fixture
 def convexWhale(accounts):
     # Totally in it for the tech (largest EOA holder of CVX, ~70k worth)
-    convexWhale = accounts.at('0x48e91eA1b2ce7FE7F39b0f606412d63855bfD674', force=True)
+    convexWhale = accounts.at('0x5F465e9fcfFc217c5849906216581a657cd60605', force=True)
     yield convexWhale
 
 # this is the live strategy for ib3crv curve
 @pytest.fixture
 def curveVoterProxyStrategy():
-    yield Contract("0x5148C3124B42e73CA4e15EEd1B304DB59E0F2AF7")
+    yield Contract("0xbA9052141cEf06FD55733D23231c37Fc856CE6F4")
 
-# this is the live strategy for ib3crv convex
-@pytest.fixture
-def strategy():
-    yield Contract("0x864F408B422B7d33416AC678b1a1A7E6fbcF5C8c")
-
-@pytest.fixture
-def strat_setup(strategy, strategist, keeper, vault, StrategyConvexIronBank, gov, curveVoterProxyStrategy, guardian):
-    vault.setManagementFee(0, {"from": gov})
-    strategy.harvest({"from": gov})
-    curveVoterProxyStrategy.harvest({"from": gov})
-    yield strat_setup
-
-
+# # this is the live strategy for ib3crv convex
 # @pytest.fixture
-# def strategy(strategist, keeper, vault, StrategyConvexIronBank, gov, curveVoterProxyStrategy, guardian):
-# 	# parameters for this are: strategy, vault, max deposit, minTimePerInvest, slippage protection (10000 = 100% slippage allowed), 
-#     strategy = guardian.deploy(StrategyConvexIronBank, vault)
-#     strategy.setKeeper(keeper, {"from": gov})
-#     # lower the debtRatio of genlender to make room for our new strategy
-#     vault.updateStrategyDebtRatio(curveVoterProxyStrategy, 9950, {"from": gov})
-#     vault.setManagementFee(0, {"from": gov})
-#     curveVoterProxyStrategy.harvest({"from": gov})
-#     vault.addStrategy(strategy, 50, 0, 2 ** 256 -1, 1000, {"from": gov})
-#     strategy.setStrategist('0x8Ef63b525fceF7f8662D98F77f5C9A86ae7dFE09', {"from": gov})
-#     strategy.harvest({"from": gov})
-#     yield strategy
+# def strategy():
+#     yield Contract("0x864F408B422B7d33416AC678b1a1A7E6fbcF5C8c")
+
+
+@pytest.fixture
+def strategy(strategist, keeper, vault, StrategyConvex3Crypto, gov, curveVoterProxyStrategy, guardian):
+	# parameters for this are: strategy, vault, max deposit, minTimePerInvest, slippage protection (10000 = 100% slippage allowed), 
+    strategy = guardian.deploy(StrategyConvex3Crypto, vault)
+    strategy.setKeeper(keeper, {"from": gov})
+    # lower the debtRatio of genlender to make room for our new strategy
+    vault.updateStrategyDebtRatio(curveVoterProxyStrategy, 0, {"from": gov})
+    vault.setManagementFee(0, {"from": gov})
+    curveVoterProxyStrategy.harvest({"from": gov})
+    vault.addStrategy(strategy, 50, 0, 2 ** 256 -1, 1000, {"from": gov})
+    strategy.setStrategist('0x8Ef63b525fceF7f8662D98F77f5C9A86ae7dFE09', {"from": gov})
+    strategy.harvest({"from": gov})
+    yield strategy
 
 @pytest.fixture
 def vault(pm):
     Vault = pm(config["dependencies"][0]).Vault
-    vault = Vault.at('0x27b7b1ad7288079A66d12350c828D3C00A6F07d7')
+    vault = Vault.at('0xE537B5cc158EB71037D4125BDD7538421981E6AA')
     yield vault

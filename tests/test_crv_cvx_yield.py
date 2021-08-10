@@ -3,22 +3,24 @@ from brownie import Contract
 from brownie import config
 
 # test passes as of 21-05-20
-def test_crv_cvx_yield(gov, token, vault, dudesahn, strategist, whale, strategy, chain, strategist_ms, rewardsContract, crv, cvx, strat_setup):
+def test_crv_cvx_yield(gov, token, vault, dudesahn, strategist, whale, strategy, chain, strategist_ms, rewardsContract, crv, cvx):
     ## deposit to the vault after approving
     startingWhale = token.balanceOf(whale)
     token.approve(vault, 2 ** 256 - 1, {"from": whale})
-    vault.deposit(100000e18, {"from": whale})
+    vault.deposit(50e18, {"from": whale})
     newWhale = token.balanceOf(whale)
     
     # harvest, store asset amount
+    chain.sleep(1)
     strategy.harvest({"from": gov})
-        
+    chain.sleep(1)        
     # simulate one day of earnings
     chain.sleep(86400)
     chain.mine(1)
     
+    chain.sleep(1)
     strategy.harvest({"from": gov})
-    
+    chain.sleep(1)    
     cvx_holdings = cvx.balanceOf(strategy)/1e18
     crv_holdings = crv.balanceOf(strategy)/1e18
 

@@ -7,7 +7,7 @@ def test_simple_harvest(gov, token, vault, dudesahn, strategist, whale, strategy
     ## deposit to the vault after approving
     startingWhale = token.balanceOf(whale)
     token.approve(vault, 2 ** 256 - 1, {"from": whale})
-    vault.deposit(100000e18, {"from": whale})
+    vault.deposit(50e18, {"from": whale})
     newWhale = token.balanceOf(whale)
     
     # harvest, store asset amount
@@ -36,7 +36,7 @@ def test_simple_harvest(gov, token, vault, dudesahn, strategist, whale, strategy
 
 
     # Display estimated APR based on the past day
-    print("\nEstimated DAI APR: ", "{:.2%}".format(((new_assets_dai - old_assets_dai) * 365) / (strategy.estimatedTotalAssets())))
+    print("\nEstimated 3Crypto APR: ", "{:.2%}".format(((new_assets_dai - old_assets_dai) * 365) / (strategy.estimatedTotalAssets())))
     
     # simulate a day of waiting for share price to bump back up
     curveVoterProxyStrategy.harvest({"from": gov})

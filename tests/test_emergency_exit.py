@@ -7,9 +7,10 @@ def test_emergency_exit(gov, token, vault, dudesahn, strategist, whale, strategy
     ## deposit to the vault after approving
     startingWhale = token.balanceOf(whale)
     token.approve(vault, 2 ** 256 - 1, {"from": whale})
-    vault.deposit(100000e18, {"from": whale})
-    strategy.harvest({"from": dudesahn})
-
+    vault.deposit(50e18, {"from": whale})
+    chain.sleep(1)
+    strategy.harvest({"from": gov})
+    chain.sleep(1)
     # simulate a day of earnings
     chain.sleep(86400)
     chain.mine(1)
@@ -20,7 +21,9 @@ def test_emergency_exit(gov, token, vault, dudesahn, strategist, whale, strategy
     # confirm that we will claim rewards on withdrawal, set emergency and exit, then confirm that the strategy has no funds
     strategy.setClaimRewards(True, {"from": gov})
     strategy.setEmergencyExit({"from": gov})
-    strategy.harvest({"from": dudesahn})
+    chain.sleep(1)
+    strategy.harvest({"from": gov})
+    chain.sleep(1)
     assert strategy.estimatedTotalAssets() == 0
     assert rewardsContract.balanceOf(strategy) == 0
 
@@ -37,9 +40,10 @@ def test_emergency_withdraw_method_0(gov, token, vault, dudesahn, strategist, wh
     ## deposit to the vault after approving
     startingWhale = token.balanceOf(whale)
     token.approve(vault, 2 ** 256 - 1, {"from": whale})
-    vault.deposit(100000e18, {"from": whale})
-    strategy.harvest({"from": dudesahn})
-
+    vault.deposit(50e18, {"from": whale})
+    chain.sleep(1)
+    strategy.harvest({"from": gov})
+    chain.sleep(1)
     # simulate a day of earnings
     chain.sleep(86400)
     chain.mine(1)
@@ -52,7 +56,9 @@ def test_emergency_withdraw_method_0(gov, token, vault, dudesahn, strategist, wh
     strategy.setEmergencyExit({"from": gov})
     
     strategy.withdrawToConvexDepositTokens({"from": dudesahn})
-    strategy.harvest({"from": dudesahn})
+    chain.sleep(1)
+    strategy.harvest({"from": gov})
+    chain.sleep(1)    
     assert strategy.estimatedTotalAssets() == 0
     assert rewardsContract.balanceOf(strategy) == 0
     assert cvxIBDeposit.balanceOf(strategy) > 0
@@ -66,8 +72,9 @@ def test_emergency_withdraw_method_1(gov, token, vault, dudesahn, strategist, wh
     ## deposit to the vault after approving
     startingWhale = token.balanceOf(whale)
     token.approve(vault, 2 ** 256 - 1, {"from": whale})
-    vault.deposit(100000e18, {"from": whale})
-    strategy.harvest({"from": dudesahn})
+    vault.deposit(50e18, {"from": whale})
+    chain.sleep(1)
+    strategy.harvest({"from": gov})
 
     # simulate a day of earnings
     chain.sleep(86400)
@@ -81,7 +88,8 @@ def test_emergency_withdraw_method_1(gov, token, vault, dudesahn, strategist, wh
     strategy.setEmergencyExit({"from": gov})
     
     strategy.withdrawToConvexDepositTokens({"from": dudesahn})
-    strategy.harvest({"from": dudesahn})
+    chain.sleep(1)
+    strategy.harvest({"from": gov})
     assert strategy.estimatedTotalAssets() == 0
     assert rewardsContract.balanceOf(strategy) == 0
     assert cvxIBDeposit.balanceOf(strategy) > 0

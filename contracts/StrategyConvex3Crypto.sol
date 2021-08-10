@@ -298,6 +298,14 @@ contract StrategyConvex3Crypto is BaseStrategy {
         }
     }
 
+    function liquidateAllPositions() internal override returns (uint256) {
+        uint256 stakedTokens = IConvexRewards(rewardsContract).balanceOf(address(this));
+        if (stakedTokens > 0) {
+            IConvexRewards(rewardsContract).withdrawAndUnwrap(stakedTokens,claimRewards);        
+            }
+        return want.balanceOf(address(this));
+    }
+
     // Sells our harvested CRV into the selected output (DAI, USDC, or USDT).
     function _sellCrv(uint256 _crvAmount) internal {
         IUniswapV2Router02(crvRouter).swapExactTokensForTokens(
@@ -357,12 +365,7 @@ contract StrategyConvex3Crypto is BaseStrategy {
         override
         returns (address[] memory)
     {
-        address[] memory protected = new address[](5);
-        protected[0] = address(convexToken);
-        protected[1] = address(crv);
-        protected[2] = address(dai);
-        protected[3] = address(usdt);
-        protected[4] = address(usdc);
+        address[] memory protected = new address[](0);
 
         return protected;
     }
@@ -457,7 +460,7 @@ contract StrategyConvex3Crypto is BaseStrategy {
     {
         address[] memory ethPath = new address[](2);
         ethPath[0] = address(weth);
-        ethPath[1] = address(dai);
+        ethPath[1] = address(usdt);
 
         uint256[] memory callCostInDai =
             IUniswapV2Router02(crvRouter).getAmountsOut(_ethAmount, ethPath);
@@ -510,6 +513,18 @@ contract StrategyConvex3Crypto is BaseStrategy {
 
             return crvValue.add(cvxValue); // dollar value of our harvest
         }
+    }
+
+    function ethToWant(uint256 _amtInWei)
+        public
+        view
+        override
+        returns (uint256)
+    {
+
+        uint256 _ethToWant;
+
+        return _ethToWant;
     }
 
     // set number of tends before we call our next harvest
