@@ -299,10 +299,14 @@ contract StrategyConvex3Crypto is BaseStrategy {
     }
 
     function liquidateAllPositions() internal override returns (uint256) {
-        uint256 stakedTokens = IConvexRewards(rewardsContract).balanceOf(address(this));
+        uint256 stakedTokens =
+            IConvexRewards(rewardsContract).balanceOf(address(this));
         if (stakedTokens > 0) {
-            IConvexRewards(rewardsContract).withdrawAndUnwrap(stakedTokens,claimRewards);        
-            }
+            IConvexRewards(rewardsContract).withdrawAndUnwrap(
+                stakedTokens,
+                claimRewards
+            );
+        }
         return want.balanceOf(address(this));
     }
 
@@ -521,7 +525,6 @@ contract StrategyConvex3Crypto is BaseStrategy {
         override
         returns (uint256)
     {
-
         uint256 _ethToWant;
 
         return _ethToWant;
