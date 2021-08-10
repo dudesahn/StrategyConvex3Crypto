@@ -57,13 +57,13 @@ interface IConvexDeposit {
 
 /* ========== CONTRACT ========== */
 
-contract StrategyConvexIronBank is BaseStrategy {
+contract StrategyConvex3Crypto is BaseStrategy {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
 
     ICurveFi public constant curve =
-        ICurveFi(0x2dded6Da1BF5DBdF597C45fcFaa3194e53EcfeAF); // Curve Iron Bank Pool. need this for buying more pool tokens.
+        ICurveFi(0xD51a44d3FaE010294C616388b506AcdA1bfAAE46); // Curve 3Crypto Pool. need this for buying more pool tokens.
     address public crvRouter = 0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F; // default to sushiswap, more CRV liquidity there
     address public cvxRouter = 0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F; // default to sushiswap, more CVX liquidity there
     address public constant voter = 0xF147b8125d2ef93FB6965Db97D6746952a133934; // Yearn's veCRV voter, we send some extra CRV here
@@ -71,9 +71,9 @@ contract StrategyConvexIronBank is BaseStrategy {
     address[] public convexTokenPath; // path to sell CVX
 
     address public depositContract = 0xF403C135812408BFbE8713b5A23a04b3D48AAE31; // this is the deposit contract that all pools use, aka booster
-    address public rewardsContract = 0x3E03fFF82F77073cc590b656D42FceB12E4910A8; // This is unique to each curve pool, this one is for iron bank
-    uint256 public pid = 29; // this is unique to each pool
-    uint256 public optimal; // this is the optimal token to deposit back to our curve pool. 0 DAI, 1 USDC, 2 USDT
+    address public rewardsContract = 0x9D5C5E364D81DaB193b72db9E9BE9D8ee669B652; // This is unique to each curve pool, this one is for 3Crypto
+    uint256 public pid = 38; // this is unique to each pool
+    uint256 public optimal = 2; // this is the optimal token to deposit back to our curve pool. 0 USDT, 1 WBTC, 2 WETH
 
     // Swap stuff
     uint256 public keepCRV = 1000; // the percentage of CRV we re-lock for boost (in basis points)
@@ -85,10 +85,8 @@ contract StrategyConvexIronBank is BaseStrategy {
         IERC20(0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B);
     IERC20 public constant weth =
         IERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
-    IERC20 public constant dai =
-        IERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
-    IERC20 public constant usdc =
-        IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
+    IERC20 public constant wbtc =
+        IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
     IERC20 public constant usdt =
         IERC20(0xdAC17F958D2ee523a2206206994597C13D831ec7);
 
@@ -125,25 +123,23 @@ contract StrategyConvexIronBank is BaseStrategy {
         IERC20(address(crv)).safeApprove(sushiswapRouter, type(uint256).max);
         convexToken.safeApprove(uniswapRouter, type(uint256).max);
         convexToken.safeApprove(sushiswapRouter, type(uint256).max);
-        dai.safeApprove(address(curve), type(uint256).max);
-        usdc.safeApprove(address(curve), type(uint256).max);
+        weth.safeApprove(address(curve), type(uint256).max);
+        wbtc.safeApprove(address(curve), type(uint256).max);
         usdt.safeApprove(address(curve), type(uint256).max);
 
         // crv token path
-        crvPath = new address[](3);
+        crvPath = new address[](2);
         crvPath[0] = address(crv);
         crvPath[1] = address(weth);
-        crvPath[2] = address(dai);
 
         // convex token path
-        convexTokenPath = new address[](3);
+        convexTokenPath = new address[](2);
         convexTokenPath[0] = address(convexToken);
         convexTokenPath[1] = address(weth);
-        convexTokenPath[2] = address(dai);
     }
 
     function name() external view override returns (string memory) {
-        return "StrategyConvexIronBank";
+        return "StrategyConvex3Crypto";
     }
 
     // total assets held by strategy. loose funds in strategy and all staked funds
@@ -188,17 +184,17 @@ contract StrategyConvexIronBank is BaseStrategy {
             uint256 crvRemainder = crvBalance.sub(_keepCRV);
 
             _sellCrv(crvRemainder);
-            if (convexBalance > 0) _sellConvex(convexBalance);
+            _sellConvex(convexBalance);
 
             if (optimal == 0) {
-                uint256 daiBalance = dai.balanceOf(address(this));
-                curve.add_liquidity([daiBalance, 0, 0], 0, true);
-            } else if (optimal == 1) {
-                uint256 usdcBalance = usdc.balanceOf(address(this));
-                curve.add_liquidity([0, usdcBalance, 0], 0, true);
-            } else {
                 uint256 usdtBalance = usdt.balanceOf(address(this));
-                curve.add_liquidity([0, 0, usdtBalance], 0, true);
+                curve.add_liquidity([usdtBalance, 0, 0], 0);
+            } else if (optimal == 1) {
+                uint256 wbtcBalance = wbtc.balanceOf(address(this));
+                curve.add_liquidity([0, wbtcBalance, 0], 0);
+            } else {
+                uint256 wethBalance = weth.balanceOf(address(this));
+                curve.add_liquidity([0, 0, wethBalance], 0);
             }
         }
         // this is a harvest, so set our switch equal to 1 so this
@@ -270,7 +266,7 @@ contract StrategyConvexIronBank is BaseStrategy {
                 uint256 crvRemainder = crvBalance.sub(_keepCRV);
 
                 _sellCrv(crvRemainder);
-                if (convexBalance > 0) _sellConvex(convexBalance);
+                _sellConvex(convexBalance);
                 // increase our tend counter by 1 so we can know when we should harvest again
                 uint256 previousTendCounter = tendCounter;
                 tendCounter = previousTendCounter.add(1);
@@ -295,18 +291,19 @@ contract StrategyConvexIronBank is BaseStrategy {
             uint256 withdrawnBal = want.balanceOf(address(this));
             _liquidatedAmount = Math.min(_amountNeeded, withdrawnBal);
 
-            // if _amountNeeded != withdrawnBal, then we have an error
-            if (_amountNeeded != withdrawnBal) {
-                uint256 assets = estimatedTotalAssets();
-                uint256 debt = vault.strategies(address(this)).totalDebt;
-                _loss = debt.sub(assets);
-            }
-            require(_liquidatedAmount + _loss == _amountNeeded);
+            _loss = _amountNeeded.sub(_liquidatedAmount);
         } else {
             // we have enough balance to cover the liquidation available
-            require(_liquidatedAmount + _loss == _amountNeeded);
             return (_amountNeeded, 0);
         }
+    }
+
+    function liquidateAllPositions() internal override returns (uint256) {
+        uint256 stakedTokens = IConvexRewards(rewardsContract).balanceOf(address(this));
+        if (stakedTokens > 0) {
+            IConvexRewards(rewardsContract).withdrawAndUnwrap(stakedTokens,claimRewards);        
+            }
+        return want.balanceOf(address(this));
     }
 
     // Sells our harvested CRV into the selected output (DAI, USDC, or USDT).
@@ -368,12 +365,7 @@ contract StrategyConvexIronBank is BaseStrategy {
         override
         returns (address[] memory)
     {
-        address[] memory protected = new address[](5);
-        protected[0] = address(convexToken);
-        protected[1] = address(crv);
-        protected[2] = address(dai);
-        protected[3] = address(usdt);
-        protected[4] = address(usdc);
+        address[] memory protected = new address[](0);
 
         return protected;
     }
@@ -427,7 +419,7 @@ contract StrategyConvexIronBank is BaseStrategy {
 
         // check if it makes sense to send funds from vault to strategy
         uint256 credit = vault.creditAvailable();
-        if (profitFactor.mul(callCost) < credit.add(profit)) return true;
+        return (profitFactor.mul(callCost) < credit.add(profit));
 
         // calculate how much profit we'll make if we harvest
         uint256 harvestProfit = claimableProfitInDolla();
@@ -468,7 +460,7 @@ contract StrategyConvexIronBank is BaseStrategy {
     {
         address[] memory ethPath = new address[](2);
         ethPath[0] = address(weth);
-        ethPath[1] = address(dai);
+        ethPath[1] = address(usdt);
 
         uint256[] memory callCostInDai =
             IUniswapV2Router02(crvRouter).getAmountsOut(_ethAmount, ethPath);
@@ -486,7 +478,6 @@ contract StrategyConvexIronBank is BaseStrategy {
         uint256 maxSupply = 100 * 1000000 * 1e18; // 100mil
         uint256 reductionPerCliff = 100000000000000000000000; // 100,000
         uint256 supply = convexToken.totalSupply();
-        uint256 mintableCvx;
 
         uint256 cliff = supply.div(reductionPerCliff);
         //mint if below total cliffs
@@ -494,35 +485,46 @@ contract StrategyConvexIronBank is BaseStrategy {
             //for reduction% take inverse of current cliff
             uint256 reduction = totalCliffs.sub(cliff);
             //reduce
-            mintableCvx = claimableCrv.mul(reduction).div(totalCliffs);
+            uint256 mintableCvx = claimableCrv.mul(reduction).div(totalCliffs);
 
             //supply cap check
             uint256 amtTillMax = maxSupply.sub(supply);
             if (mintableCvx > amtTillMax) {
                 mintableCvx = amtTillMax;
             }
-        }
 
-        uint256 crvValue;
-        if (claimableCrv > 0) {
             uint256[] memory crvSwap =
                 IUniswapV2Router02(crvRouter).getAmountsOut(
                     claimableCrv,
                     crvPath
                 );
-            crvValue = crvSwap[2];
-        }
+            uint256 crvValue = crvSwap[2];
 
-        uint256 cvxValue;
-        if (mintableCvx > 0) {
-            uint256[] memory cvxSwap =
-                IUniswapV2Router02(cvxRouter).getAmountsOut(
-                    mintableCvx,
-                    convexTokenPath
-                );
-            cvxValue = cvxSwap[2];
+            uint256 cvxValue = 0;
+
+            if (mintableCvx > 0) {
+                uint256[] memory cvxSwap =
+                    IUniswapV2Router02(cvxRouter).getAmountsOut(
+                        mintableCvx,
+                        convexTokenPath
+                    );
+                cvxValue = cvxSwap[2];
+            }
+
+            return crvValue.add(cvxValue); // dollar value of our harvest
         }
-        return crvValue.add(cvxValue); // dollar value of our harvest
+    }
+
+    function ethToWant(uint256 _amtInWei)
+        public
+        view
+        override
+        returns (uint256)
+    {
+
+        uint256 _ethToWant;
+
+        return _ethToWant;
     }
 
     // set number of tends before we call our next harvest
@@ -546,7 +548,7 @@ contract StrategyConvexIronBank is BaseStrategy {
     // These functions are useful for setting parameters of the strategy that may need to be adjusted.
 
     // Set the amount of CRV to be locked in Yearn's veCRV voter from each harvest. Default is 10%.
-    function setKeepCRV(uint256 _keepCRV) external onlyGovernance {
+    function setKeepCRV(uint256 _keepCRV) external onlyAuthorized {
         keepCRV = _keepCRV;
     }
 
@@ -590,28 +592,39 @@ contract StrategyConvexIronBank is BaseStrategy {
         harvestProfitFactor = _harvestProfitFactor;
     }
 
-    // Set optimal token to sell harvested CRV into for depositing back to Iron Bank Curve pool.
-    // Default is DAI, but can be set to USDC or USDT as needed by strategist or governance.
+    // Set optimal token to sell harvested CRV into for depositing back to 3Crypto Curve pool.
+    // Default is WETH, but can be set to WBTC or USDT as needed by strategist or governance.
     function setOptimal(uint256 _optimal) external onlyAuthorized {
-        crvPath = new address[](3);
-        crvPath[0] = address(crv);
-        crvPath[1] = address(weth);
-
-        convexTokenPath = new address[](3);
-        convexTokenPath[0] = address(convexToken);
-        convexTokenPath[1] = address(weth);
-
         if (_optimal == 0) {
-            crvPath[2] = address(dai);
-            convexTokenPath[2] = address(dai);
+            crvPath = new address[](3);
+            crvPath[0] = address(crv);
+            crvPath[1] = address(weth);
+            crvPath[2] = address(usdt);
+
+            convexTokenPath = new address[](3);
+            convexTokenPath[0] = address(convexToken);
+            convexTokenPath[1] = address(weth);
+            convexTokenPath[2] = address(usdt);
             optimal = 0;
         } else if (_optimal == 1) {
-            crvPath[2] = address(usdc);
-            convexTokenPath[2] = address(usdc);
+            crvPath = new address[](3);
+            crvPath[0] = address(crv);
+            crvPath[1] = address(weth);
+            crvPath[2] = address(wbtc);
+
+            convexTokenPath = new address[](3);
+            convexTokenPath[0] = address(convexToken);
+            convexTokenPath[1] = address(weth);
+            convexTokenPath[2] = address(wbtc);
             optimal = 1;
         } else if (_optimal == 2) {
-            crvPath[2] = address(usdt);
-            convexTokenPath[2] = address(usdt);
+            crvPath = new address[](2);
+            crvPath[0] = address(crv);
+            crvPath[1] = address(weth);
+
+            convexTokenPath = new address[](2);
+            convexTokenPath[0] = address(convexToken);
+            convexTokenPath[1] = address(weth);
             optimal = 2;
         } else {
             require(false, "incorrect token");
